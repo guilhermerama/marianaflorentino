@@ -13,6 +13,8 @@
 
     <!-- Bootstrap core CSS -->
     <link href="{{ url_for('static', filename='css/bootstrap.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/lightbox.css') }}" rel="stylesheet">
+    <!-- <link href="{{ url_for('static', filename='css/bootstrap-lightbox.min.css') }}" rel="stylesheet">	-->
 
     <!--load font awesome-->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
@@ -49,7 +51,9 @@
     <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<!-- <script src="{{ url_for('static', filename='js/bootstrap-lightbox.min.js') }}"></script> -->
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="{{ url_for('static', filename='js/lightbox.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ie10-viewport-bug-workaround.js') }}"></script>
   </body>
 </html>
