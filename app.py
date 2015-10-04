@@ -23,8 +23,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + app.config['DATABASE_FILE
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
 
-#tipos_projetos = [('comercial', 'Comercial'), ('residencial', 'Residencial'), ('institucional', 'Institucional'), ('iluminacao', 'Iluminação')]
-
 # Create directory for file fields to use
 file_path = op.join(op.dirname(__file__), 'static/files')
 #try:
@@ -58,7 +56,6 @@ class Foto(db.Model):
     legenda = db.Column(db.Text)
     path = db.Column(db.Unicode(128))#representa a localização da foto
     id_projeto = db.Column(db.Integer, db.ForeignKey('projeto.id'))
-    #projeto = db.relationship("Projeto")		
     	
     def __unicode__(self):
         return self.titulo
@@ -100,7 +97,6 @@ class ProjetoView(sqla.ModelView):
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
-
         return Markup('<img src="%s">' % url_for('static', filename='files/' + form.thumbgen_filename(model.path)))
 
     #inline_models = (Tipo,)	
@@ -121,7 +117,6 @@ class FotoView(sqla.ModelView):
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
-
         return Markup('<img src="%s">' % url_for('static', filename='files/' + form.thumbgen_filename(model.path)))
     
 	column_formatters = {
@@ -142,8 +137,8 @@ class FotoView(sqla.ModelView):
 admin = Admin(app, 'Administrador', template_mode='bootstrap3')
 
 # Add views
-admin.add_view(ProjetoView(Projeto, db.session))
-admin.add_view(FotoView(Foto, db.session))
+admin.add_view(ProjetoView(Projeto, db.session)) 
+admin.add_view(FotoView(Foto, db.session)) 
 admin.add_view(sqla.ModelView(Tipo, db.session))
 
 
@@ -151,15 +146,22 @@ admin.add_view(sqla.ModelView(Tipo, db.session))
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+	tipos = Tipo.query.all();
+	tipos_projetos=[];	
+	
+	for tipo in tipos:
+		tipos_projetos.append((tipo.id, tipo.nome.lower()));
+
+	return render_template('index.html', tipos_projetos=tipos_projetos)
 
 @app.route('/projetos/<id_tipo>')
 def projetos(id_tipo):
 	projetos = Projeto.query.filter(Projeto.tipo_id == id_tipo);
-	tipo = Tipo.query.filter(Tipo.id == id_tipo);
-	return render_template('projetos.html', projetos=projetos, tipo=tipo);
-    
-
+	#app.logger.debug(projetos)
+	if (projetos.count() > 0):	
+		return render_template('projetos.html', projetos=projetos);
+	
+	return index()
 
 def thumb_name(name):
     return form.thumbgen_filename(name)

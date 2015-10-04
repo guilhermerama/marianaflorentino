@@ -36,10 +36,12 @@
     				<ul class="nav">
                         <li class="dropdown"><p class="menulink">projetos</p>
                             <ul class="dropdown-menu">
-                                <li><a href="/projetos/comercial">comercial</a></li>
-                                <li><a href="/projetos/residencial">residencial</a></li>
-<li><a href="/projetos/institucional">institucional</a></li>
-<li><a href="/projetos/iluminacao">iluminação</a></li>
+				{% for id, nome in tipos_projetos %}
+                                <li><a href="/projetos/{{id}}">{{nome}}</a></li>
+									
+				{% endfor %}
+
+                           
                             </ul>
                         </li>
 			</div>

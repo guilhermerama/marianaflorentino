@@ -8,7 +8,7 @@
         <div class="row">
 
             <div class="col-lg-12">
-                <h1 class="page-header">{{tipo.nome}}</h1>
+                <h1 class="page-header">{{projetos[0].tipo.nome}}</h1>
             </div>
 
 		{% for projeto in projetos %}
@@ -17,23 +17,18 @@
 		<div class="caption">
                     <h4>{{ projeto.nome }}</h4>
                     <p>{{ projeto.cliente }}</p>
-                    <a href="{{url_for('static', filename='files/' + projeto.fotos[0].path)}}" data-lightbox="{{projeto.nome}}" class="label label-default" rel="tooltip" title="Ver fotos">Ver Fotos</a></p>
+                    <a href="{{url_for('static', filename='files/' + projeto.fotos[0].path)}}" data-lightbox="{{projeto.nome}}" data-title="{{projeto.fotos[0].legenda}}" class="label label-default" rel="tooltip" title="Ver fotos">Ver Fotos</a></p>
                 </div>               
                     <img class="img-responsive" src="{{url_for('static', filename='files/' + thumb_name(projeto.path))}}" alt="">
                 </a>
 </div>
             </div>
-		{% for foto in projeto.fotos %}
-		<a href="{{url_for('static', filename='files/' + foto.path)}}" data-lightbox="{{projeto.nome}}"></a>
+			{% for foto in projeto.fotos %}
+				{% if loop.index0 > 0 %}
+					<a href="{{url_for('static', filename='files/' + foto.path)}}" data-lightbox="{{projeto.nome}}" data-title="{{foto.legenda}}"></a>
+				{% endif %}		
+			{% endfor %}
 		{% endfor %}
-		{% endfor %}
-
-<div id="demoLightbox" class="lightbox hide fade"  tabindex="-1" role="dialog" aria-hidden="true">
-    	<div class='lightbox-content'>
-    		<img src="{{ url_for('static', filename='files/' + thumb_name(projetos[0].path)) }}">
-    		<div class="lightbox-caption"><p>Your caption here</p></div>
-    	</div>
-    </div>
 		
 </div>
             
