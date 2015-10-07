@@ -7,6 +7,8 @@ from flask import Flask, render_template, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.event import listens_for
 from jinja2 import Markup
+from flask.ext.security import current_user, login_required, RoleMixin, Security, SQLAlchemyUserDatastore, UserMixin, utils
+from flask.ext.login import LoginManager, AnonymousUserMixin
 from flask_admin import Admin, form
 from flask_admin.form import rules
 from flask_admin.contrib import sqla
@@ -25,10 +27,37 @@ db = SQLAlchemy(app)
 
 # Create directory for file fields to use
 file_path = op.join(op.dirname(__file__), 'static/files')
-#try:
-#    os.mkdir(file_path)
-#except OSError:
-#    print 'Erro ao tentar criar diretorio'	
+
+# flask-security models
+
+roles_users = db.Table('roles_users',
+        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True)
+    password = db.Column(db.String(255))
+    active = db.Column(db.Boolean())
+    confirmed_at = db.Column(db.DateTime())
+    roles = db.relationship('Role', secondary=roles_users,
+                            backref=db.backref('users', lazy='dynamic'))
+
+# Create Security
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
+
+# Only needed on first execution
+#@app.before_first_request
+#def create_user():
+#    db.create_all()
+#    user_datastore.create_user(email='guilhermerama@gmail.com', password='marianaeh10')
+#    db.session.commit()
 
 class Tipo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -92,8 +121,11 @@ def del_foto(mapper, connection, target):
         except OSError:
             pass
 	
+class AcessView(sqla.ModelView):
+	def is_accessible(self):
+		return current_user.is_authenticated()
 
-class ProjetoView(sqla.ModelView):
+class ProjetoView(AcessView):
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
@@ -113,7 +145,8 @@ class ProjetoView(sqla.ModelView):
                                       thumbnail_size=(600, 400, True))
     }
 
-class FotoView(sqla.ModelView):
+
+class FotoView(AcessView):
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
@@ -121,7 +154,10 @@ class FotoView(sqla.ModelView):
     
 	column_formatters = {
         'path': _list_thumbnail
-    }
+
+    	}
+	
+	column_auto_select_related = True
 
     column_list = ('legenda', 'path', 'id_projeto')
 
@@ -132,6 +168,7 @@ class FotoView(sqla.ModelView):
                                       base_path=file_path,
                                       thumbnail_size=(120, 80, True))
     }
+	
 
 # Create admin
 admin = Admin(app, 'Administrador', template_mode='bootstrap3')
@@ -139,10 +176,12 @@ admin = Admin(app, 'Administrador', template_mode='bootstrap3')
 # Add views
 admin.add_view(ProjetoView(Projeto, db.session)) 
 admin.add_view(FotoView(Foto, db.session)) 
-admin.add_view(sqla.ModelView(Tipo, db.session))
+admin.add_view(AcessView(Tipo, db.session))
 
-
-
+@login_required
+@app.route('/login')
+def login():
+	return redirect('/admin')
 
 @app.route('/')
 def index():
