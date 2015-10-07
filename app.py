@@ -9,7 +9,7 @@ from sqlalchemy.event import listens_for
 from jinja2 import Markup
 from flask.ext.security import current_user, login_required, RoleMixin, Security, SQLAlchemyUserDatastore, UserMixin, utils
 from flask.ext.login import LoginManager, AnonymousUserMixin
-from flask_admin import Admin, form
+from flask_admin import Admin, form, AdminIndexView
 from flask_admin.form import rules
 from flask_admin.contrib import sqla
 
@@ -168,10 +168,15 @@ class FotoView(AcessView):
                                       base_path=file_path,
                                       thumbnail_size=(120, 80, True))
     }
-	
 
+
+class MyAdminIndexView(AdminIndexView):
+    def is_accessible(self):
+        return current_user.is_authenticated()
+	
 # Create admin
-admin = Admin(app, 'Administrador', template_mode='bootstrap3')
+admin = Admin(app, 'Administrador', template_mode='bootstrap3', index_view=MyAdminIndexView())
+
 
 # Add views
 admin.add_view(ProjetoView(Projeto, db.session)) 
