@@ -3,21 +3,36 @@
 
 import os
 import os.path as op
-from flask import Flask, render_template, url_for, request, flash
+import string
+import random
+from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.event import listens_for
 from jinja2 import Markup
-from flask.ext.security import current_user, login_required, RoleMixin, Security, SQLAlchemyUserDatastore, UserMixin, utils
-from flask.ext.login import LoginManager, AnonymousUserMixin
-from flask_admin import Admin, form, AdminIndexView
+from flask.ext.security import current_user, login_required, RoleMixin, Security, SQLAlchemyUserDatastore, UserMixin
+from flask_mail import Mail
+from flask_admin import Admin, form, AdminIndexView, BaseView, helpers as admin_helpers
 from flask_admin.form import rules
 from flask_admin.contrib import sqla
 
 # Create application
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'COfwEzLtXbxwuIxkTNBcG0'
+
+# Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = '465'
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = 'botflasktest@gmail.com'
+app.config['MAIL_PASSWORD'] = 'medabots'
+app.config['MAIL_DEFAULT_SENDER'] = 'naoresponder'
+mail = Mail(app)
+
 
 # Create dummy secrety key so we can use sessions
-app.config['SECRET_KEY'] = '123456790'
+app.config['SECURITY_PASSWORD_SALT'] = 'COfwEzLtXbxwuIxkTNBcG0'
+app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
+app.config['SECURITY_RECOVERABLE'] = True
 
 # Create in-memory database
 app.config['DATABASE_FILE'] = 'sample_db.sqlite'
@@ -56,7 +71,7 @@ security = Security(app, user_datastore)
 #@app.before_first_request
 #def create_user():
 #    db.create_all()
-#    user_datastore.create_user(email='guilhermerama@gmail.com', password='marianaeh10')
+#    user_datastore.create_user(email='you@email.com', password='pass')
 #    db.session.commit()
 
 class Tipo(db.Model):
@@ -173,15 +188,28 @@ class FotoView(AcessView):
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated()
+    
+    def inaccessible_callback(self, name, **kwargs):
+        # redirect to login page if user doesn't have access
+        return redirect(url_for('login', next=request.url))		
 	
 # Create admin
-admin = Admin(app, 'Administrador', template_mode='bootstrap3', index_view=MyAdminIndexView())
+admin = Admin(app, 'Administrador', template_mode='bootstrap3', base_template='guimaster.html', index_view=MyAdminIndexView())
 
 
 # Add views
 admin.add_view(ProjetoView(Projeto, db.session)) 
 admin.add_view(FotoView(Foto, db.session)) 
 admin.add_view(AcessView(Tipo, db.session))
+#admin.add_view(BaseView(name='Logout', menu_icon_type='glyph', menu_icon_value='glyphicon-home', endpoint='/logout', url=None))
+
+@security.context_processor
+def security_context_processor():
+    return dict(
+        admin_base_template=admin.base_template,
+        admin_view=admin.index_view,
+        h=admin_helpers,
+    )
 
 @login_required
 @app.route('/login')
@@ -209,6 +237,9 @@ def projetos(id_tipo):
 
 def thumb_name(name):
     return form.thumbgen_filename(name)
+
+def random_generator(size=22, chars=string.ascii_uppercase + string.ascii_lowercase + string.digits):
+	return ''.join(random.choice(chars) for _ in range(size))
 
 if __name__ == '__main__':
 

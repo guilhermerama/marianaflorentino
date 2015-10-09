@@ -1,0 +1,9 @@
+{% import 'admin/layout.html' as layout with context -%}
+{% extends 'admin/base.html' %}
+{% block access_control %}
+{% if current_user.is_authenticated() %}
+<ul class="nav navbar-nav navbar-right">
+	<a href="{{url_for('security.logout')}}">Sair</a>
+</ul>
+{% endif %}
+{% endblock %}
