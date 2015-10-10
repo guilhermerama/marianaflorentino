@@ -14,6 +14,7 @@ from flask_mail import Mail
 from flask_admin import Admin, form, AdminIndexView, BaseView, helpers as admin_helpers
 from flask_admin.form import rules
 from flask_admin.contrib import sqla
+from werkzeug import secure_filename
 
 # Create application
 app = Flask(__name__)
@@ -43,6 +44,12 @@ db = SQLAlchemy(app)
 # Create directory for file fields to use
 file_path = op.join(op.dirname(__file__), 'static/files')
 
+# thumb name generator function
+
+def thumb_name(filename):
+    name, _ = op.splitext(filename)
+    return secure_filename('%s-mini.jpg' % name)
+
 # flask-security models
 
 roles_users = db.Table('roles_users',
@@ -51,7 +58,7 @@ roles_users = db.Table('roles_users',
 
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(80), unique=True)
+    name = db.Column(db.String(256), unique=True)
     description = db.Column(db.String(255))
 
 class User(db.Model, UserMixin):
@@ -68,11 +75,11 @@ user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
 # Only needed on first execution
-#@app.before_first_request
-#def create_user():
-#    db.create_all()
-#    user_datastore.create_user(email='you@email.com', password='pass')
-#    db.session.commit()
+@app.before_first_request
+def create_user():
+    db.create_all()
+    user_datastore.create_user(email='guilhermerama@gmail.com', password='marianaeh10')
+    db.session.commit()
 
 class Tipo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,10 +93,10 @@ class Projeto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.Unicode(64))
     cliente = db.Column(db.Unicode(64))	
-    path = db.Column(db.Unicode(128))#representa o thumb
+    path = db.Column(db.Unicode(256), unique=True)#representa o thumb de capa
     fotos = db.relationship("Foto", backref='projeto')
     tipo_id = db.Column(db.Integer, db.ForeignKey('tipo.id'))
-    tipo = db.relationship("Tipo")	
+    tipo = db.relationship("Tipo")
 
     def __unicode__(self):
         return self.nome
@@ -98,9 +105,9 @@ class Foto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.Unicode(128))
     legenda = db.Column(db.Text)
-    path = db.Column(db.Unicode(128))#representa a localização da foto
+    path = db.Column(db.Unicode(256), unique=True)#representa a localização da foto
     id_projeto = db.Column(db.Integer, db.ForeignKey('projeto.id'))
-    	
+
     def __unicode__(self):
         return self.titulo
 
@@ -115,8 +122,7 @@ def del_projeto(mapper, connection, target):
 
         # Delete thumbnail
         try:
-            os.remove(op.join(file_path,
-                              form.thumbgen_filename(target.path)))
+            os.remove(op.join(file_path, thumb_name(target.path)))
         except OSError:
             pass
 
@@ -131,8 +137,7 @@ def del_foto(mapper, connection, target):
 
 	# Delete thumbnail
         try:
-            os.remove(op.join(file_path,
-                              form.thumbgen_filename(target.path)))
+            os.remove(op.join(file_path, thumb_name(target.path)))
         except OSError:
             pass
 	
@@ -144,7 +149,7 @@ class ProjetoView(AcessView):
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
-        return Markup('<img src="%s">' % url_for('static', filename='files/' + form.thumbgen_filename(model.path)))
+        return Markup('<img src="%s">' % url_for('static', filename='files/' + thumb_name(model.path)))
 
     #inline_models = (Tipo,)	
 
@@ -156,8 +161,8 @@ class ProjetoView(AcessView):
     # In this case, Flask-Admin won't attempt to merge various parameters for the field.
     form_extra_fields = {
         'path': form.ImageUploadField('Image',
-                                      base_path=file_path,
-                                      thumbnail_size=(600, 400, True))
+                                      base_path=file_path, max_size=(600,400, True),
+                                      thumbnail_size=(120, 80, True), thumbgen=thumb_name)
     }
 
 
@@ -165,23 +170,19 @@ class FotoView(AcessView):
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
-        return Markup('<img src="%s">' % url_for('static', filename='files/' + form.thumbgen_filename(model.path)))
+        return Markup('<img src="%s">' % url_for('static', filename='files/' + thumb_name(model.path)))
     
 	column_formatters = {
         'path': _list_thumbnail
 
     	}
-	
-	column_auto_select_related = True
-
-    column_list = ('legenda', 'path', 'id_projeto')
 
     # Alternative way to contribute field is to override it completely.
     # In this case, Flask-Admin won't attempt to merge various parameters for the field.
     form_extra_fields = {
         'path': form.ImageUploadField('Image',
                                       base_path=file_path,
-                                      thumbnail_size=(120, 80, True))
+                                      thumbnail_size=(120, 80, True), thumbgen=thumb_name)
     }
 
 
@@ -235,9 +236,6 @@ def projetos(id_tipo):
 	
 	return index()
 
-def thumb_name(name):
-    return form.thumbgen_filename(name)
-
 def random_generator(size=22, chars=string.ascii_uppercase + string.ascii_lowercase + string.digits):
 	return ''.join(random.choice(chars) for _ in range(size))
 
@@ -250,6 +248,4 @@ if __name__ == '__main__':
     #if not os.path.exists(database_path):
     #    build_sample_db()
     
-    
-    app.jinja_env.globals.update(thumb_name=thumb_name)
     app.run(debug=True)

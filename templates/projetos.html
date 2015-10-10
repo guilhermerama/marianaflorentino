@@ -19,7 +19,7 @@
                     <p>{{ projeto.cliente }}</p>
                     <a href="{{url_for('static', filename='files/' + projeto.fotos[0].path)}}" data-lightbox="{{projeto.nome}}" data-title="{{projeto.fotos[0].legenda}}" class="label label-default" rel="tooltip" title="Ver fotos">Ver Fotos</a></p>
                 </div>               
-                    <img class="img-responsive" src="{{url_for('static', filename='files/' + thumb_name(projeto.path))}}" alt="">
+                    <img class="img-responsive" src="{{url_for('static', filename='files/' + projeto.path)}}" alt="">
                 </a>
 </div>
             </div>

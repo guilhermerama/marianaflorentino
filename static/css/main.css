@@ -1,8 +1,24 @@
+html {
+  position: relative;
+  min-height: 100%;
+}
+
 body {
   padding-top: 50px;
   font-family: Century Gothic,CenturyGothic,AppleGothic, sans-serif;
   color: #373435	
+  margin-bottom: 30px;
 }
+
+.footer {	
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 30px;
+  background-color: #f5f5f5;
+}
+
 .starter-template {
   padding: 40px 15px;
   text-align: center;
@@ -17,7 +33,11 @@ margin-top: 120px !important;
 }
 
 .top-buffer-50 {
-margin-top: 50px;
+margin-top: 50px !important;
+}
+
+.bottom-buffer-30 {
+margin-bottom: 30px !important;
 }
 
 .menulink {
@@ -119,6 +139,3 @@ line-height:100px;
     z-index:2;
 }
 
-.footer {
- background-color: #fafafa;	
-}
